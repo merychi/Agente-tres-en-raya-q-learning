@@ -1,4 +1,4 @@
-# AI.PY: Archivo que contiene la lógica del agente"
+# AI.PY: Archivo que contiene la lógica del agente AI para el tres en raya."
 from game.logic import LogicaTresRayas
 from copy import deepcopy
 import time
