@@ -1,6 +1,8 @@
 import random
 import pickle
 import os
+import json
+import ast # Para convertir el string "('X',...)" de vuelta a tupla
 
 # Definimos constantes para el aprendizaje
 ARCHIVO_Q_TABLE = "conocimiento_gato.pkl"
@@ -94,11 +96,19 @@ class QAgent:
             self.epsilon *= self.epsilon_decay
 
     def guardar_conocimiento(self):
-        """Guarda la Q-Table en un archivo."""
+        """Guarda la Q-Table en un archivo JSON (Legible para Merry y Julio, la nueva era de la AI)."""
         try:
-            with open(ARCHIVO_Q_TABLE, "wb") as f:
-                pickle.dump(self.q_table, f)
-            print(f"Cerebro guardado: {len(self.q_table)} estados aprendidos.")
+            # CONVERSIÓN: Las claves (tuplas) deben ser strings para JSON
+            # Creamos un diccionario temporal donde las claves son str(estado)
+            data_para_json = {str(k): v for k, v in self.q_table.items()}
+            
+            # Cambiamos la extensión a .json
+            archivo_json = ARCHIVO_Q_TABLE.replace(".pkl", ".json")
+            
+            with open(archivo_json, "w") as f:
+                json.dump(data_para_json, f, indent=4) # indent=4 lo hace bonito visualmente
+                
+            print(f"Cerebro guardado en JSON: {len(self.q_table)} estados aprendidos.")
         except Exception as e:
             print(f"Error guardando cerebro: {e}")
 
