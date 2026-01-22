@@ -35,23 +35,26 @@ class QAgent:
         """
         estado = self.obtener_estado(tablero)
 
-        # 1. Fase de EXPLORACIÓN (Curiosidad)
-        # Si estamos entrenando y sale un número menor a epsilon, elegimos al azar.
-        if en_entrenamiento and random.uniform(0, 1) < self.epsilon:
-            return random.choice(movimientos_posibles)
+        # ---------------------------------------------------------------------
+        # TODO PARA Merry : IMPLEMENTAR LA CURIOSIDAD DEL GATO
+        # ---------------------------------------------------------------------
+        # Tienes que escribir un 'if' que decida si el gato EXPLORA (mueve al azar).
+        # Pista: Genera un número aleatorio entre 0 y 1 usando random.uniform(0, 1).
+        # Si ese número es MENOR que self.epsilon, retorna un movimiento aleatorio.
+        # (Usa random.choice(movimientos_posibles) para elegir).
+        
+        # --- ESCRIBE TU CÓDIGO AQUÍ ---
+        
+        
+        # ---------------------------------------------------------------------
 
         # 2. Fase de EXPLOTACIÓN (Usar conocimiento)
-        # Si el estado no existe en memoria, inicializamos con ceros
+        # Si el código llega aquí, es porque decidió NO explorar, sino usar su cerebro.
         if estado not in self.q_table:
             self.q_table[estado] = {mov: 0.0 for mov in movimientos_posibles}
 
-        # Buscamos el movimiento con el valor más alto en la tabla Q para este estado
-        # Si hay varios empates, elige uno al azar entre los mejores
         valores_movimientos = self.q_table[estado]
-        
-        # Filtramos solo los movimientos válidos actuales
         valores_validos = {m: valores_movimientos.get(m, 0.0) for m in movimientos_posibles}
-        
         max_valor = max(valores_validos.values())
         mejores_movimientos = [m for m, v in valores_validos.items() if v == max_valor]
         

@@ -33,13 +33,14 @@ def jugar_episodio_entrenamiento(jugar_vs_si_mismo=False):
             ganador = juego.verificar_ganador()
             
             if ganador == "X":
-                # GANÓ (X)
-                # Corrección: Pasamos juego.tablero como estado siguiente y [] como movimientos
-                agente_global.aprender(estado_actual, accion, 10, juego.tablero, [], True)
+                # TODO: Define la recompensa por GANAR (Ej: 10)
+            #    recompensa = # ... pon el número aquí
+            # agente_global.aprender(estado_actual, accion, recompensa, juego.tablero, [], True)
                 return "X"
             elif not juego.existe_espacio_libre():
-                # EMPATE
-                agente_global.aprender(estado_actual, accion, 5, juego.tablero, [], True)
+               # TODO: Define la recompensa por EMPATE 
+               # recompensa = # ... pon el número aquí
+               # agente_global.aprender(estado_actual, accion, recompensa, juego.tablero, [], True)
                 return "Empate"
             
             # Guardamos estado para evaluar después
@@ -69,8 +70,9 @@ def jugar_episodio_entrenamiento(jugar_vs_si_mismo=False):
             if ganador == "O":
                 # EL RIVAL GANÓ (Castigo diferido)
                 if estado_previo_agente is not None:
-                    # Corrección: Agregado el argumento [] antes del True
-                    agente_global.aprender(estado_previo_agente, accion_previa_agente, -10, juego.tablero, [], True)
+                   # TODO: Define el CASTIGO por PERDER (Ej: -10)
+                   # castigo = # ... pon el número negativo aquí
+                #  agente_global.aprender(estado_previo_agente, accion_previa_agente, castigo, juego.tablero, [], True)
                 return "O"
             
             elif not juego.existe_espacio_libre():
