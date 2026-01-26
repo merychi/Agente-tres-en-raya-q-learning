@@ -35,18 +35,12 @@ class QAgent:
         """
         estado = self.obtener_estado(tablero)
 
-        # ---------------------------------------------------------------------
-        # TODO PARA Merry : IMPLEMENTAR LA CURIOSIDAD DEL GATO
-        # ---------------------------------------------------------------------
-        # Tienes que escribir un 'if' que decida si el gato EXPLORA (mueve al azar).
-        # Pista: Genera un número aleatorio entre 0 y 1 usando random.uniform(0, 1).
-        # Si ese número es MENOR que self.epsilon, retorna un movimiento aleatorio.
-        # (Usa random.choice(movimientos_posibles) para elegir).
+        # 1. Fase de EXPLORACIÓN (movimiento al azar)
+        # A partir de un número al azar el agente podrá realizar una jugada al azar
         
-        # --- ESCRIBE TU CÓDIGO AQUÍ ---
-        
-        
-        # ---------------------------------------------------------------------
+        if en_entrenamiento and random.uniform(0,1) < self.epsilon:
+            accion_azar = random.choice(movimientos_posibles)
+            return accion_azar
 
         # 2. Fase de EXPLOTACIÓN (Usar conocimiento)
         # Si el código llega aquí, es porque decidió NO explorar, sino usar su cerebro.
