@@ -33,14 +33,12 @@ def jugar_episodio_entrenamiento(jugar_vs_si_mismo=False):
             ganador = juego.verificar_ganador()
             
             if ganador == "X":
-                # TODO: Define la recompensa por GANAR (Ej: 10)
-            #    recompensa = # ... pon el número aquí
-            # agente_global.aprender(estado_actual, accion, recompensa, juego.tablero, [], True)
+                recompensa = 10
+                agente_global.aprender(estado_actual, accion, recompensa, juego.tablero, [], True)
                 return "X"
             elif not juego.existe_espacio_libre():
-               # TODO: Define la recompensa por EMPATE 
-               # recompensa = # ... pon el número aquí
-               # agente_global.aprender(estado_actual, accion, recompensa, juego.tablero, [], True)
+                recompensa = 5 
+                agente_global.aprender(estado_actual, accion, recompensa, juego.tablero, [], True)
                 return "Empate"
             
             # Guardamos estado para evaluar después
@@ -70,22 +68,19 @@ def jugar_episodio_entrenamiento(jugar_vs_si_mismo=False):
             if ganador == "O":
                 # EL RIVAL GANÓ (Castigo diferido)
                 if estado_previo_agente is not None:
-                   # TODO: Define el CASTIGO por PERDER (Ej: -10)
-                   # castigo = # ... pon el número negativo aquí
-                #  agente_global.aprender(estado_previo_agente, accion_previa_agente, castigo, juego.tablero, [], True)
+                    castigo = -10
+                    agente_global.aprender(estado_previo_agente, accion_previa_agente, castigo, juego.tablero, [], True)
                 return "O"
             
             elif not juego.existe_espacio_libre():
                 # EMPATE (Premio diferido)
                 if estado_previo_agente is not None:
-                    # Corrección: Agregado el argumento [] antes del True
                     agente_global.aprender(estado_previo_agente, accion_previa_agente, 5, juego.tablero, [], True)
                 return "Empate"
             
             else:
                 # EL JUEGO SIGUE (Neutro)
                 if estado_previo_agente is not None:
-                    # Aquí SÍ pasamos movimientos_futuros porque el juego no terminó
                     agente_global.aprender(estado_previo_agente, accion_previa_agente, 0, juego.tablero, movimientos_futuros, False)
             
             turno = "X"
