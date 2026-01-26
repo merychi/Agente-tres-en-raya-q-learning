@@ -2,11 +2,66 @@
 
 import pygame
 import os
+from ui.config import *
 
-def cargar_fondos():
-    fondos = {}
+def cargar_fondos(): 
+    ruta_fondo = os.path.join(os.path.dirname(__file__), '..', 'assets', 'fondo_tablero.png')
+    try:
+        fondo = pygame.image.load(ruta_fondo)
+        fondo = pygame.transform.scale(fondo, (ANCHO_VENTANA, ALTO_VENTANA))
+        return fondo 
+    except Exception as e:
+        print(f"Error cargando fondo: {e}")
+        return None 
+    
+def cargar_fondo_menu(): 
+    ruta_fondo = os.path.join(os.path.dirname(__file__), '..', 'assets', 'fondo_menu.png')
+    try:
+        fondo = pygame.image.load(ruta_fondo)
+        fondo = pygame.transform.scale(fondo, (ANCHO_VENTANA, ALTO_VENTANA))
+        return fondo 
+    except Exception as e:
+        print(f"Error cargando fondo: {e}")
+        return None 
 
-    return fondos
+def cargar_iconos(): 
+    ruta_assets = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icon')
+    try:
+        icon_home = pygame.image.load(os.path.join(ruta_assets, "home_icon.png"))
+        icon_home = pygame.transform.scale(icon_home, (30, 30)) 
+            
+        icon_reload = pygame.image.load(os.path.join(ruta_assets, "reload_icon.png"))
+        icon_reload = pygame.transform.scale(icon_reload, (30, 30))
+        
+        return icon_home, icon_reload 
+    except Exception as e:
+        print(f"AVISO: No se encontraron los iconos PNG en {ruta_assets}. Error: {e}")
+        return None, None 
+    
+
+def cargar_imagenes_gato():
+    """Carga todas las expresiones del gato y las devuelve en un diccionario"""
+    emociones = {
+        "neutro": "gato_neutro.png",
+        "pensando": "gato_pensando.png",
+        "feliz": "gato_feliz.png",
+        "triste": "gato_triste.png"
+    }
+    
+    imagenes_cargadas = {}
+    ruta_base = os.path.join(os.path.dirname(__file__), '..', 'assets', 'gato_expresiones')
+
+    for clave, nombre in emociones.items():
+        ruta_completa = os.path.join(ruta_base, nombre)
+        try:
+            img = pygame.image.load(ruta_completa)
+            img = pygame.transform.scale(img, (380, 440))
+            imagenes_cargadas[clave] = img
+        except Exception as e:
+            print(f"Error al cargar la expresión {clave}: {e}")
+            imagenes_cargadas[clave] = None
+            
+    return imagenes_cargadas 
 
 # ------------------------------
 # Carga y establece el icono de la ventana del juego.
@@ -32,7 +87,7 @@ def cargar_fuentes():
     fuentes = {}
     ruta_fuente = os.path.join(os.path.dirname(__file__), '..', 'assets', 'BubbleboddyNeue-Bold Trial.ttf')
     r_fuente = os.path.join(os.path.dirname(__file__), '..', 'assets', 'BubbleboddyNeue-ExtraBold Trial.ttf')
-    rut_fuente = os.path.join(os.path.dirname(__file__), '..', 'assets', 'Boongaloo-Regular.ttf')
+    rut_fuente = os.path.join(os.path.dirname(__file__), '..', 'assets', 'Boogaloo-Regular.ttf')
 
     try:
         # Intentar cargar fuente bonita

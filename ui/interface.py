@@ -1,4 +1,4 @@
-# MENU.PY: ARCHIVO DIBUJA LA INTERFAZ DEL JUEGO"
+# INTERFACE.PY: ARCHIVO DIBUJA LA INTERFAZ DEL JUEGO"
 
 import pygame
 import sys
@@ -17,85 +17,138 @@ class InterfazGrafica:
         pygame.font.init()
         pygame.mixer.init()
         self.pantalla = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
-        pygame.display.set_caption("Tres en Raya - Minimax")
+        pygame.display.set_caption("Tres en Raya - Machine Learning")
         
-        # --- Fade / animaciones ---
-        self.fade_cache = {}           # id_nodo -> alpha
-        self.fade_speed = 12           # incremento alpha por frame
-        self.fade_cache_camino = {}    # fade independiente para camino real
-
-        # --- Scrolls ---
-        # Árbol completo (X,Y)
-        self.scroll_x = 0
-        self.scroll_y = 0
-        self.scroll_velocidad = 40
-        self.scroll_y_min = -2500
-        self.scroll_y_max = 200
-        self.scroll_x_min = -1200
-        self.scroll_x_max = 300
-
-        # Camino real (solo vertical)
-        self.scroll_camino = 0
-        self.scroll_camino_speed = 30
-        self.scroll_camino_min = -2000
-        self.scroll_camino_max = 200
-
-        # Modal (pantalla completa) para árbol
-        self.modal_abierto = False
-        self.modal_scroll_x = 0
-        self.modal_scroll_y = 0
-        self.modal_scroll_vel = 40
-
-        # Fuentes y sonido
-        self.fuentes = cargar_fuentes()
-        self.sonidos = cargar_sonidos()
-
-        ruta_fondo = os.path.join(os.path.dirname(__file__), '..', 'assets', 'fondo_tablero.png')
-        try:
-            self.fondo_juego = pygame.image.load(ruta_fondo)
-            self.fondo_juego = pygame.transform.scale(self.fondo_juego, (ANCHO_VENTANA, ALTO_VENTANA))
-        except FileNotFoundError:
-            print("AVISO: No se encontró fondo_juego.png. Usando color sólido.")
-            self.fondo_juego = None
-
-        # Layout tablero
-        self.centro_izq = ANCHO_VENTANA * 0.25
-        self.centro_der = ANCHO_VENTANA * 0.75
-        self.ancho_juego = (TAMANO_CASILLA * 3) + (ESPACIO * 2) 
-
-        self.inicio_x = int(self.centro_izq - (self.ancho_juego / 2))
-        y_arriba = 130
-        y_abajo = ALTO_VENTANA - 80
-        punto_medio_vertical = (y_arriba + y_abajo) / 2
-        self.inicio_y = int(punto_medio_vertical - (self.ancho_juego / 2))
-
-        # Botones
+        # Variables de Estado 
+        self.tablero_previo = [" "] * 9 
+        self.animaciones_fichas = {} 
         self.ultimo_boton_hover = None
 
-        self.rect_boton = pygame.Rect(0, 0, 200, 50)
-        self.rect_boton.center = (self.centro_izq, ALTO_VENTANA - 80)
+        # Assets
+        self.fuentes = cargar_fuentes()
+        self.sonidos = cargar_sonidos()
+        self.fondo_juego = cargar_fondos()  
+        self.imagenes = {}
+        self.imagenes = cargar_imagenes_gato()  
+        self.img_home, self.img_reload = cargar_iconos()
 
-        self.rect_boton_arbol = pygame.Rect(0, 0, 220, 50)
-        self.rect_boton_arbol.center = (self.centro_der, ALTO_VENTANA - 80)
+        # Posicion del tablero
+        self.ancho_juego = (TAMANO_CASILLA * 3) + (ESPACIO * 2) 
+        self.inicio_x = 0
+        self.inicio_y = 0
 
-        self.rect_boton_salir = pygame.Rect(40, 40, 50, 50)
-        self.rect_boton_salir.bottomright = (ANCHO_VENTANA - 30, ALTO_VENTANA - 30)
+        # Botones laterales
+        self.rect_home = pygame.Rect(25, 25, 50, 50)
+        self.rect_reload = pygame.Rect(25, 90, 50, 50)
+        
+        # Conexión con events.py
+        self.rect_boton_salir = self.rect_home    
+        self.rect_boton = self.rect_reload    
+    
+    def _dibujar_boton_con_imagen(self, rect, imagen_icon):
+        mouse_pos = pygame.mouse.get_pos()
+        hover = rect.collidepoint(mouse_pos)
+        
+        # Sombra
+        sombra = rect.copy()
+        sombra.y += 5
+        pygame.draw.rect(self.pantalla, (40, 40, 80), sombra, border_radius=12)
+        
+        # Cuerpo
+        color = (60, 63, 130) if hover else (55, 58, 127)
+        elevacion = 4 if hover else 0
+        rect_v = rect.copy()
+        rect_v.y -= elevacion
+        pygame.draw.rect(self.pantalla, color, rect_v, border_radius=12)
+        
+        # Imagen Icono
+        if imagen_icon:
+            icon_rect = imagen_icon.get_rect(center=rect_v.center)
+            self.pantalla.blit(imagen_icon, icon_rect)
+        
+        return hover
 
-        # Camino real ancho fijo
-        self.ancho_camino = 220
+    def _dibujar_grid_tablero(self, x_pos, y_pos, tablero):
+        self.inicio_x, self.inicio_y = x_pos, y_pos
+        ancho_fondo = self.ancho_juego + (PADDING_LATERAL * 2)
+        alto_fondo = self.ancho_juego + (PADDING_TABLERO * 2)
+        pygame.draw.rect(self.pantalla, pygame.Color(COLOR_TABLERO), (x_pos - PADDING_LATERAL, y_pos - PADDING_TABLERO, ancho_fondo, alto_fondo), border_radius=45)
 
-        self.arrastrando = False
-        self.mouse_previo = (0, 0)
+        for i in range(9):
+            fila, col = i // 3, i % 3
+            x, y = x_pos + col * (TAMANO_CASILLA + ESPACIO), y_pos + fila * (TAMANO_CASILLA + ESPACIO)
+            pygame.draw.rect(self.pantalla, pygame.Color(COLOR_CASILLA_SOMBRA_3D), (x, y + 10, TAMANO_CASILLA, TAMANO_CASILLA), border_radius=25)
+            pygame.draw.rect(self.pantalla, pygame.Color(COLOR_CASILLA), (x, y, TAMANO_CASILLA, TAMANO_CASILLA), border_radius=25)
+            if tablero[i] != " ":
+                color = pygame.Color(COLOR_X if tablero[i] == "X" else COLOR_O)
+                txt = self.fuentes['ficha'].render(tablero[i], True, color)
+                self.pantalla.blit(txt, txt.get_rect(center=(x + TAMANO_CASILLA / 2, y + TAMANO_CASILLA / 2)))
 
-        self.tablero_previo = [" "] * 9  # Para comparar y detectar jugadas
-        self.animaciones_fichas = {}     # Diccionario {indice: escala_actual}
+    def dibujar_avatar(self, superficie, estado_emocional):
+        img = self.imagenes.get(estado_emocional) or self.imagenes.get("neutro")
+        if not img: return
+        x_gato = int(ANCHO_VENTANA * 0.58) 
+        y_gato = int((ALTO_VENTANA / 2) - (img.get_height() / 2)) + 30
+        
+        # Plataforma azul
+        rect_plat = pygame.Rect(x_gato - 20, y_gato + img.get_height() - 150, img.get_width() + 40, 160)
+        pygame.draw.rect(superficie, pygame.Color(COLOR_TABLERO), rect_plat, border_radius=30)
+        superficie.blit(img, (x_gato, y_gato))
+
+    def dibujar_interfaz_humano(self, tablero, mensaje, combo_ganador=None):
+        if self.fondo_juego: self.pantalla.blit(self.fondo_juego, (0, 0))
+        else: self.pantalla.fill(pygame.Color(COLOR_FONDO))
+
+        # TÍTULOS
+        lbl_t = self.fuentes['titulo'].render("TABLERO DEL JUEGO", True, pygame.Color(COLOR_BOTON))
+        self.pantalla.blit(lbl_t, lbl_t.get_rect(center=(ANCHO_VENTANA // 2, 60)))
+        lbl_m = self.fuentes['subtitulo'].render(mensaje, True, pygame.Color(COLOR_X))
+        self.pantalla.blit(lbl_m, lbl_m.get_rect(center=(ANCHO_VENTANA // 2, 110)))
+
+        # TABLERO Y GATO
+        self._dibujar_grid_tablero(int(ANCHO_VENTANA * 0.18), int(ALTO_VENTANA/2 - 150), tablero)
+        
+        # Lógica de emoción
+        emocion = "neutro"
+        if "Perdiste" in mensaje or "Ganó la IA" in mensaje: emocion = "feliz"
+        elif "Ganaste" in mensaje or "Ganó O" in mensaje: emocion = "triste"
+        elif "IA" in mensaje or "Pensando" in mensaje: emocion = "pensando"
+        
+        self.dibujar_avatar(self.pantalla, emocion)
+        if combo_ganador: self.dibujar_linea_ganadora(combo_ganador)
+
+        hover_actual = None
+        
+        if self._dibujar_boton_con_imagen(self.rect_home, self.img_home):
+            hover_actual = "SALIR"
+        
+        if self._dibujar_boton_con_imagen(self.rect_reload, self.img_reload):
+            hover_actual = "NUEVO"
+
+        # Sonido Hover
+        if hover_actual != self.ultimo_boton_hover:
+            if hover_actual and 'menu_hover' in self.sonidos: self.sonidos['menu_hover'].play()
+            self.ultimo_boton_hover = hover_actual
+
+        pygame.display.flip()
+
+    def obtener_evento_usuario(self):
+        return manejar_eventos(self)
+    
+    def dibujar_linea_ganadora(self, combo):
+        if not combo: return
+        def centro(i):
+            f, c = i // 3, i % 3
+            return (self.inicio_x + c*(TAMANO_CASILLA+ESPACIO) + TAMANO_CASILLA//2, self.inicio_y + f*(TAMANO_CASILLA+ESPACIO) + TAMANO_CASILLA//2)
+        p1, p2 = centro(combo[0]), centro(combo[2])
+        pygame.draw.line(self.pantalla, (255, 215, 0), p1, p2, 15)
 
     # ------------------------------
     # AUXILIAR: Extraer camino lineal del árbol
     # Recorre la estructura de árbol buscando los nodos marcados como 'es_camino_ganador'
     # para reconstruir la lista lineal que se muestra a la derecha.
     # ------------------------------
-    def _extraer_camino_lineal(self, arbol):
+""" def _extraer_camino_lineal(self, arbol):
         camino = []
         if not arbol:
             return camino
@@ -128,23 +181,20 @@ class InterfazGrafica:
             
             nodo_actual = siguiente
             
-        return camino
+        return camino """
 
     # ------------------------------
     # _es_turno_ia
     # Deduce de quién fue el turno basado en el conteo de fichas'
     # ------------------------------
-    def _es_turno_ia(self, tablero):
-        x_count = tablero.count("X")
-        o_count = tablero.count("O")
-        # Si hay más X que O, el último movimiento fue X (IA)
-        return x_count > o_count
+   
+   
 
     # ------------------------------
     # ÁRBOL recursivo (usa scroll_x, scroll_y)
     # Dibuja el árbol con nodos, líneas y scroll; llama a mini-tableros y se expande solo.
     # ------------------------------
-    def dibujar_arbol_recursivo(self, nodos, x_min, x_max, y_nivel, padre_pos=None):
+""" def dibujar_arbol_recursivo(self, nodos, x_min, x_max, y_nivel, padre_pos=None):
         if not nodos: return
 
         cantidad = len(nodos)
@@ -207,14 +257,14 @@ class InterfazGrafica:
                     center_x_nodo + ancho_virtual, 
                     y_nivel + ESPACIO_VERTICAL_ARBOL, 
                     punto_conexion_bottom
-                )
+                ) """
 
     # ------------------------------
     # CAMINO REAL (columna con scroll propio)
     # Dibuja la columna del CAMINO REAL con scroll independiente.
     # Solo muestra la etiqueta de turno y el mini-tablero, sin puntaje.
     # ------------------------------
-    def dibujar_camino_real(self, camino_real, x_inicio, y_inicio):
+""" def dibujar_camino_real(self, camino_real, x_inicio, y_inicio):
 
         if not camino_real:
             return
@@ -243,12 +293,12 @@ class InterfazGrafica:
             if depth < len(camino_real) - 1:
                 pygame.draw.line(self.pantalla, pygame.Color(200, 200, 200),
                                  (x_inicio + 40, y - 10), (x_inicio + 40, y + 5), 2)
-
+ """
     # ------------------------------
     # DIBUJAR INTERFAZ (principal)
     # Dibuja toda la pantalla.
     # ------------------------------
-    def dibujar_interfaz(self, tablero, mensaje, tablero_raiz=None, estructura_arbol=None, camino_real=None, combo_ganador=None):
+""" def dibujar_interfaz(self, tablero, mensaje, tablero_raiz=None, estructura_arbol=None, camino_real=None, combo_ganador=None):
 
         # Extraer el camino lineal del árbol 
         boton_hover_actual = None
@@ -357,13 +407,13 @@ class InterfazGrafica:
         if self.modal_abierto:
             self._dibujar_modal_arbol(estructura_arbol)
 
-        pygame.display.flip()
+        pygame.display.flip() """
     
     # --------------------
     # Modal para ver el árbol completo
     # Overlay oscuro con árbol completo, permite arrastrar y cerrar con botón o Esc.
     # --------------------
-    def _dibujar_modal_arbol(self, estructura_arbol):
+""" def _dibujar_modal_arbol(self, estructura_arbol):
         overlay = pygame.Surface((ANCHO_VENTANA, ALTO_VENTANA), pygame.SRCALPHA)
         overlay.fill((10, 10, 10, 220)) 
         self.pantalla.blit(overlay, (0, 0))
@@ -401,37 +451,6 @@ class InterfazGrafica:
             self.dibujar_arbol_recursivo(estructura_arbol, inner_x, inner_x + inner_w, inner_y + 50)
 
         self.scroll_x, self.scroll_y = backup_x, backup_y
-        self.pantalla.set_clip(previous_clip)
+        self.pantalla.set_clip(previous_clip) """
 
-    def obtener_evento_usuario(self):
-        return manejar_eventos(self)
     
-    # --------------------
-    # Dibuja una línea dorada sobre la combinación ganadora
-    # 
-    # --------------------
-    def dibujar_linea_ganadora(self, combo):
-        if not combo: return
-
-        # Obtenemos el índice de la primera y última casilla de la línea
-        start_idx = combo[0]
-        end_idx = combo[2]
-
-        def obtener_centro(idx):
-            fila = idx // 3
-            col = idx % 3
-            x = self.inicio_x + col * (TAMANO_CASILLA + ESPACIO) + (TAMANO_CASILLA // 2)
-            y = self.inicio_y + fila * (TAMANO_CASILLA + ESPACIO) + (TAMANO_CASILLA // 2)
-            return (x, y)
-
-        start_pos = obtener_centro(start_idx)
-        end_pos = obtener_centro(end_idx)
-
-        color_linea = (255, 215, 0) 
-        grosor = 15
-
-        # Dibujamos la línea
-        pygame.draw.line(self.pantalla, color_linea, start_pos, end_pos, grosor)
-        
-        pygame.draw.circle(self.pantalla, color_linea, start_pos, grosor // 2)
-        pygame.draw.circle(self.pantalla, color_linea, end_pos, grosor // 2)
