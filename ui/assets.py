@@ -124,6 +124,7 @@ def cargar_fuentes():
         fuentes['mini'] = pygame.font.Font(ruta_fuente, 18)
         fuentes['ayuda_sub'] = pygame.font.Font(ruta_fuente, 19)
         fuentes['ui'] = pygame.font.Font(ruta_fuente, 16)
+        fuentes['score'] = pygame.font.Font(rut_fuente, 17)
         fuentes['numeros'] = pygame.font.SysFont(rut_fuente, 20, bold=True) 
         fuentes['creditos'] = pygame.font.Font(ruta_fuente, 20)
     except FileNotFoundError:
@@ -149,6 +150,8 @@ def cargar_sonidos():
     
     ruta_sfx = os.path.join(os.path.dirname(__file__), '..', 'assets', 'plop.wav')
     ruta_win = os.path.join(os.path.dirname(__file__), '..', 'assets', 'ganar.mp3') 
+    ruta_win = os.path.join(os.path.dirname(__file__), '..', 'assets', 'meow.wav') 
+    ruta_win = os.path.join(os.path.dirname(__file__), '..', 'assets', 'draw.wav') 
 
     try:
         if not pygame.mixer.get_init():
@@ -165,6 +168,12 @@ def cargar_sonidos():
 
         sonidos['win'] = pygame.mixer.Sound(ruta_win)
         sonidos['win'].set_volume(0.6)
+
+        sonidos['draw'] = pygame.mixer.Sound(ruta_win)
+        sonidos['draw'].set_volume(0.6)
+
+        sonidos['meow'] = pygame.mixer.Sound(ruta_win)
+        sonidos['meow'].set_volume(0.7)
         
     except (FileNotFoundError, pygame.error) as e:
         print(f"AVISO: No se pudo cargar el sonido: {e}")
