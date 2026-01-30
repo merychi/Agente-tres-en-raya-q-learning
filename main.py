@@ -32,6 +32,10 @@ def main():
     p_ia_vs_h = 0
     empates_h = 0
     
+    #Set 3 : IA vs IA
+    p_q_vs_m = 0
+    p_m_vs_q = 0
+    
     # CONFIGURAR VENTANA PRINCIPAL
     pantalla_principal = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
     pygame.display.set_caption("Tres en Raya - Machine Learning")
