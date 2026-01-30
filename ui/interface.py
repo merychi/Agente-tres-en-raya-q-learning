@@ -1,6 +1,7 @@
 # INTERFACE.PY: ARCHIVO DIBUJA LA INTERFAZ DEL JUEGO"
 
 import pygame
+import math
 import sys
 import os
 
@@ -80,332 +81,6 @@ class InterfazGrafica:
         self.rect_boton_salir = self.rect_home    
         self.rect_boton = self.rect_reload    
     
-    # ------------------------------
-    # DIBUJAR BOTÓN CON IMAGEN
-    # Crea un botón interactivo con sombra, efecto hover y un ícono centrado.
-    # ------------------------------
-    def _dibujar_boton_con_imagen(self, rect, imagen_icon):
-        mouse_pos = pygame.mouse.get_pos()
-        hover = rect.collidepoint(mouse_pos)
-        
-        # Sombra
-        sombra = rect.copy(); sombra.y += 5
-        pygame.draw.rect(self.pantalla, (40, 40, 80), sombra, border_radius=12)
-        
-        # Cuerpo
-        color = (60, 63, 130) if hover else (55, 58, 127)
-        rect_v = rect.copy()
-        if hover: rect_v.y -= 4
-        pygame.draw.rect(self.pantalla, color, rect_v, border_radius=12)
-        
-        if imagen_icon:
-            self.pantalla.blit(imagen_icon, imagen_icon.get_rect(center=rect_v.center))
-        return hover
-
-    # ------------------------------
-    # DIBUJAR GRID DEL TABLERO
-    # Pinta el fondo del tablero y las 9 casillas con sus fichas (X o O).
-    # ------------------------------
-    def _dibujar_grid_tablero(self, x_pos, y_pos, tablero):
-        self.inicio_x, self.inicio_y = x_pos, y_pos
-        ancho_fondo = self.ancho_juego + (PADDING_LATERAL * 2)
-        alto_fondo = self.ancho_juego + (PADDING_TABLERO * 2)
-        pygame.draw.rect(self.pantalla, pygame.Color(COLOR_TABLERO), (x_pos - PADDING_LATERAL, y_pos - PADDING_TABLERO, ancho_fondo, alto_fondo), border_radius=45)
-
-        for i in range(9):
-            fila, col = i // 3, i % 3
-            x, y = x_pos + col * (TAMANO_CASILLA + ESPACIO), y_pos + fila * (TAMANO_CASILLA + ESPACIO)
-            pygame.draw.rect(self.pantalla, pygame.Color(COLOR_CASILLA_SOMBRA_3D), (x, y + 10, TAMANO_CASILLA, TAMANO_CASILLA), border_radius=25)
-            pygame.draw.rect(self.pantalla, pygame.Color(COLOR_CASILLA), (x, y, TAMANO_CASILLA, TAMANO_CASILLA), border_radius=25)
-            if tablero[i] != " ":
-                color = pygame.Color(COLOR_X if tablero[i] == "X" else COLOR_O)
-                txt = self.fuentes['ficha'].render(tablero[i], True, color)
-                self.pantalla.blit(txt, txt.get_rect(center=(x + TAMANO_CASILLA / 2, y + TAMANO_CASILLA / 2)))
-
-
-    # ------------------------------
-    # DIBUJAR AVATAR
-    # Muestra el gato en pantalla según su tamaño (mini o grande) y estado de ánimo.
-    # ------------------------------    
-    def dibujar_avatar(self, superficie, estado_emocional, lado="derecha", modo_mini=False, ai_set="q"):
-
-        # Elegir el set correcto según el tipo de IA y el tamaño
-        if ai_set == "q":
-            diccionario = self.imagenes_q_mini if modo_mini else self.imagenes_q
-        else:
-            diccionario = self.imagenes_m_mini if modo_mini else self.imagenes_m
-            
-        img = diccionario.get(estado_emocional) or diccionario.get("neutro")
-        if not img: return
-        
-        # POSICIONAMIENTO 
-        if modo_mini:
-            # Gatos pequeños en las esquinas (IA vs IA)
-            x_gato = int(ANCHO_VENTANA * 0.95 - img.get_width()) if lado == "derecha" else int(ANCHO_VENTANA * 0.05)
-            y_gato = int((ALTO_VENTANA / 2) - (img.get_height() / 2)) + 50
-            rect_plat = pygame.Rect(x_gato - 15, y_gato + img.get_height() - 80, img.get_width() + 30, 100)
-        else:
-            # Gato grande (Modo Humano)
-            x_gato = int(ANCHO_VENTANA * 0.60)
-            y_gato = int((ALTO_VENTANA / 2) - (img.get_height() / 2)) + 30
-            rect_plat = pygame.Rect(x_gato - 20, y_gato + img.get_height() - 150, img.get_width() + 40, 160)
-
-        pygame.draw.rect(superficie, (55, 58, 127), rect_plat, border_radius=25)
-        superficie.blit(img, (x_gato, y_gato))
-
-    # ------------------------------
-    # DIBUJAR INTERFAZ HUMANO
-    # Muestra la pantalla completa del modo Jugador vs IA: fondo, tablero, títulos y gato animado.
-    # ------------------------------       
-    def dibujar_interfaz_humano(self, tablero, mensaje, combo_ganador=None):
-        if self.fondo_juego: self.pantalla.blit(self.fondo_juego, (0, 0))
-        else: self.pantalla.fill(pygame.Color(COLOR_FONDO))
-
-        # Títulos
-        lbl_t = self.fuentes['titulo'].render("TABLERO DEL JUEGO", True, (55, 58, 127))
-        self.pantalla.blit(lbl_t, lbl_t.get_rect(center=(ANCHO_VENTANA // 2, 60)))
-        lbl_m = self.fuentes['subtitulo'].render(mensaje, True, (235, 186, 239))
-        self.pantalla.blit(lbl_m, lbl_m.get_rect(center=(ANCHO_VENTANA // 2, 110)))
-
-        # Tablero a la izquierda
-        self._dibujar_grid_tablero(int(ANCHO_VENTANA * 0.20), int(ALTO_VENTANA/2 - 150), tablero)
-        
-        # Emoción del Gato (Q-Learning)
-        emocion = "neutro"
-        if "Perdiste" in mensaje or "Ganó la IA" in mensaje: emocion = "feliz"
-        elif "Ganaste" in mensaje: emocion = "triste"
-        elif "IA Pensando" in mensaje: emocion = "pensando"
-
-        # DIBUJAR UN SOLO GATO GRANDE
-        self.dibujar_avatar(self.pantalla, emocion, "derecha", modo_mini=False, ai_set="q")
-
-        if combo_ganador: self.dibujar_linea_ganadora(combo_ganador)
-        self._gestionar_botones_comunes()
-        pygame.display.flip()
-
-    # ------------------------------
-    # DIBUJAR INTERFAZ MINIMAX
-    # Muestra la pantalla del modo IA vs Minimax con tablero centrado y dos gatos pequeños enfrentados.
-    # ------------------------------
-    def dibujar_interfaz_minimax(self, tablero, mensaje, estructura_arbol=None, combo_ganador=None):
-        if self.fondo_juego: self.pantalla.blit(self.fondo_juego, (0, 0))
-        else: self.pantalla.fill((150, 150, 200))
-
-        lbl_t = self.fuentes['titulo'].render("Q-LEARNING VS MINIMAX", True, (55, 58, 127))
-        self.pantalla.blit(lbl_t, lbl_t.get_rect(center=(ANCHO_VENTANA // 2, 60)))
-        lbl_m = self.fuentes['subtitulo'].render(mensaje, True, (255, 255, 255))
-        self.pantalla.blit(lbl_m, lbl_m.get_rect(center=(ANCHO_VENTANA // 2, 110)))
-
-        # Tablero Centrado
-        self._dibujar_grid_tablero(ANCHO_VENTANA // 2 - (self.ancho_juego // 2), int(ALTO_VENTANA/2 - 150), tablero)
-
-        # Emociones cruzadas
-        emocion_q = "pensando" if "Q-Learning" in mensaje or "IA Pensando" in mensaje else "neutro"
-        emocion_m = "pensando" if "Minimax" in mensaje else "neutro"
-        if "Perdiste" in mensaje or "Ganó Q-Learning" in mensaje: emocion_q, emocion_m = "feliz", "triste"
-        elif "Ganaste" in mensaje or "Ganó Minimax" in mensaje: emocion_q, emocion_m = "triste", "feliz"
-
-        # DIBUJAR DOS GATOS PEQUEÑOS
-        self.dibujar_avatar(self.pantalla, emocion_q, "izquierda", True, ai_set="q")
-        self.dibujar_avatar(self.pantalla, emocion_m, "derecha", True, ai_set="m")
-
-        self._gestionar_botones_comunes(incluir_arbol=True)
-        
-
-        if combo_ganador: self.dibujar_linea_ganadora(combo_ganador)
-        if self.modal_abierto: self._dibujar_modal_arbol(estructura_arbol)
-        
-        pygame.display.flip()
-
-    # ------------------------------
-    # GESTIONAR BOTONES COMUNES
-    # Controla los botones de salir y reiniciar, detectando cuando el mouse pasa por encima.
-    # ------------------------------
-    def _gestionar_botones_comunes(self, incluir_arbol=False):
-
-        h_home = self._dibujar_boton_con_imagen(self.rect_home, self.img_home)
-        h_reload = self._dibujar_boton_con_imagen(self.rect_reload, self.img_reload)
-        
-        h_tree = False
-        if incluir_arbol:
-            h_tree = self._dibujar_boton_con_imagen(self.rect_boton_arbol, self.img_tree)
-
-        hover_actual = None
-        if h_home:
-            hover_actual = "SALIR"
-        elif h_reload:
-            hover_actual = "NUEVO"
-        elif h_tree:
-            hover_actual = "ARBOL"
-
-        if hover_actual != self.ultimo_boton_hover:
-            if hover_actual is not None:
-                if 'menu_hover' in self.sonidos:
-                    self.sonidos['menu_hover'].play()
-            self.ultimo_boton_hover = hover_actual
-
-    # ------------------------------
-    # OBTENER EVENTO USUARIO
-    # Captura y devuelve las acciones del teclado o mouse del jugador.
-    # ------------------------------   
-    def obtener_evento_usuario(self):
-        return manejar_eventos(self)
-    
-    # ------------------------------
-    # DIBUJAR LÍNEA GANADORA
-    # Traza una línea dorada sobre las tres casillas que formaron el ganador.
-    # ------------------------------
-    def dibujar_linea_ganadora(self, combo):
-        if not combo: return
-        def centro(i):
-            f, c = i // 3, i % 3
-            return (self.inicio_x + c*(TAMANO_CASILLA+ESPACIO) + TAMANO_CASILLA//2, self.inicio_y + f*(TAMANO_CASILLA+ESPACIO) + TAMANO_CASILLA//2)
-        p1, p2 = centro(combo[0]), centro(combo[2])
-        pygame.draw.line(self.pantalla, (255, 215, 0), p1, p2, 15)
-
-    # ------------------------------
-    # AUXILIAR: Extraer camino lineal del árbol
-    # Recorre la estructura de árbol buscando los nodos marcados como 'es_camino_ganador'
-    # para reconstruir la lista lineal que se muestra a la derecha.
-    # ------------------------------
-    """ def _extraer_camino_lineal(self, arbol):
-        camino = []
-        if not arbol:
-            return camino
-        
-        # En el primer nivel (hermanos), buscamos el ganador
-        nodo_actual = None
-        for nodo in arbol:
-            if nodo.get("es_camino_ganador"):
-                nodo_actual = nodo
-                break
-        
-        # Si no hay ganador marcado en la raíz, tomamos el primero (fallback)
-        if not nodo_actual and arbol:
-            nodo_actual = arbol[0]
-
-        # Recorrer hacia abajo
-        while nodo_actual:
-            camino.append(nodo_actual)
-            
-            # Buscar el siguiente en las sub_ramas
-            siguiente = None
-            if nodo_actual.get("sub_ramas"):
-                for hijo in nodo_actual["sub_ramas"]:
-                    if hijo.get("es_camino_ganador"):
-                        siguiente = hijo
-                        break
-                # Si no encontramos uno marcado, tomamos el primero (fallback visual)
-                if not siguiente and nodo_actual["sub_ramas"]:
-                    siguiente = nodo_actual["sub_ramas"][0]
-            
-            nodo_actual = siguiente
-            
-        return camino  """
-
-    # ------------------------------
-    # ÁRBOL recursivo (usa scroll_x, scroll_y)
-    # Dibuja el árbol con nodos, líneas y scroll; llama a mini-tableros y se expande solo.
-    # ------------------------------
-    def dibujar_arbol_recursivo(self, nodos, x_min, x_max, y_nivel, padre_pos=None):
-        if not nodos: return
-
-        cantidad = len(nodos)
-        ancho_nodo_px = (TAMANO_MINI * 3) + 8
-        
-        # Espacio fijo entre nodos hermanos
-        ESPACIO_ENTRE_HERMANOS = 140 
-        
-        centro_area = (x_min + x_max) / 2
-        ancho_total_grupo = cantidad * ESPACIO_ENTRE_HERMANOS
-        x_inicio = centro_area - (ancho_total_grupo / 2)
-
-        for i, nodo in enumerate(nodos):
-            center_x_nodo = x_inicio + (i * ESPACIO_ENTRE_HERMANOS) + (ESPACIO_ENTRE_HERMANOS / 2)
-            
-            # Posición final
-            pos_x = center_x_nodo - (ancho_nodo_px / 2) + self.scroll_x
-            pos_y = y_nivel + self.scroll_y
-            
-            punto_conexion_top = (pos_x + ancho_nodo_px / 2, pos_y)
-
-            # --- DIBUJAR LÍNEAS ---
-            if padre_pos:
-                padre_x, padre_y = padre_pos
-                hijo_x, hijo_y = punto_conexion_top
-                mid_y = (padre_y + hijo_y) // 2
-
-                pygame.draw.line(self.pantalla, pygame.Color(COLOR_LINEA), (padre_x, padre_y), (padre_x, mid_y), 2)
-                pygame.draw.line(self.pantalla, pygame.Color(COLOR_LINEA), (padre_x, mid_y), (hijo_x, mid_y), 2)
-                pygame.draw.line(self.pantalla, pygame.Color(COLOR_LINEA), (hijo_x, mid_y), (hijo_x, hijo_y), 2)
-                
-            # Determinar si es camino ganador para resaltarlo
-            es_camino = nodo.get("es_camino_ganador", False)
-            nodo_id = id(nodo)
-            
-            punto_conexion_bottom = dibujar_mini_tablero(
-                self.pantalla,         
-                self.fuentes['mini'],       
-                pos_x, pos_y, 
-                nodo["tablero"], 
-                TAMANO_MINI, 
-                self.fade_cache,        
-                self.fade_speed,        
-                nodo.get("puntaje"), 
-                nodo_id, 
-                es_camino=es_camino
-            )
-
-            p_val = nodo.get("puntaje")
-            if p_val is not None:
-                col_p = pygame.Color("#ccffcc") if p_val > 0 else (pygame.Color("#ffcccc") if p_val < 0 else pygame.Color("#ffffff"))
-                lbl_puntaje = self.fuentes['numeros'].render(str(p_val), True, col_p)
-                self.pantalla.blit(lbl_puntaje, (pos_x + ancho_nodo_px + 3, pos_y + 10))
-
-            if nodo.get("sub_ramas"):
-                ancho_virtual = 4000 
-                self.dibujar_arbol_recursivo(
-                    nodo["sub_ramas"], 
-                    center_x_nodo - ancho_virtual,
-                    center_x_nodo + ancho_virtual, 
-                    y_nivel + ESPACIO_VERTICAL_ARBOL, 
-                    punto_conexion_bottom
-                )   
-
-    # ------------------------------
-    # CAMINO REAL (columna con scroll propio)
-    # Dibuja la columna del CAMINO REAL con scroll independiente.
-    # Solo muestra la etiqueta de turno y el mini-tablero, sin puntaje.
-    # ------------------------------
-    def dibujar_camino_real(self, camino_real, x_inicio, y_inicio):
-
-        if not camino_real:
-            return
-        
-        y = y_inicio + self.scroll_camino
-        
-        for depth, nodo in enumerate(camino_real):
-            # Deducir turno
-            es_turno_ia = self._es_turno_ia(nodo["tablero"])
-            turno = "IA" if es_turno_ia else "Humano"
-            color = (255, 255, 255) if es_turno_ia else (255, 255, 255)
-            
-            self.pantalla.blit(self.fuentes['ui'].render(turno, True, color), (x_inicio, y))
-            y += 20
-
-            # Mini-tablero 
-            _, bottom = dibujar_mini_tablero(
-                self.pantalla, self.fuentes['mini'],
-                x_inicio, y, 
-                nodo["tablero"], TAMANO_MINI, 
-                self.fade_cache, self.fade_speed, 
-                None, id(nodo)
-            )
-            y = bottom + 20
-
-            if depth < len(camino_real) - 1:
-                pygame.draw.line(self.pantalla, pygame.Color(200, 200, 200),
-                                 (x_inicio + 40, y - 10), (x_inicio + 40, y + 5), 2)
 
     # ------------------------------
     # DIBUJAR INTERFAZ (principal)
@@ -415,7 +90,6 @@ class InterfazGrafica:
 
         # Extraer el camino lineal del árbol 
         boton_hover_actual = None
-        """ camino_visual = self._extraer_camino_lineal(estructura_arbol) """
 
         if self.fondo_juego:
             self.pantalla.blit(self.fondo_juego, (0, 0))
@@ -491,19 +165,6 @@ class InterfazGrafica:
         if dibujar_boton_redondo(self.pantalla, self.rect_boton, "Nuevo Juego", self.fuentes['boton']):
             boton_hover_actual = "NUEVO"
 
-        # SECCIÓN DERECHA 
-        """ t_agente = self.fuentes['subtitulo'].render("Decisiones del Agente", True, pygame.Color(COLOR_BOTON))
-        self.pantalla.blit(t_agente, t_agente.get_rect(center=(self.centro_der, 80)))
-
-        altura_clip = ALTO_VENTANA - 140 - 140 
-        clip_rect = pygame.Rect(ANCHO_VENTANA//2, 140, ANCHO_VENTANA//2, altura_clip)
-        self.pantalla.set_clip(clip_rect)
-
-        # Dibuja el camino reconstruido
-        self.dibujar_camino_real(camino_visual, self.centro_der - 100, 160)
-            
-        self.pantalla.set_clip(None) """
-
         if dibujar_boton_redondo(self.pantalla, self.rect_boton_arbol, "Ver árbol completo", self.fuentes['boton']):
             boton_hover_actual = "ARBOL"
 
@@ -520,8 +181,226 @@ class InterfazGrafica:
         if self.modal_abierto:
             self._dibujar_modal_arbol(estructura_arbol)
 
-        pygame.display.flip()   
+        pygame.display.flip() 
+
+    # ------------------------------
+    # DIBUJAR INTERFAZ HUMANO
+    # Muestra la pantalla completa del modo Jugador vs IA: fondo, tablero, títulos y gato animado.
+    # ------------------------------       
+    def dibujar_interfaz_humano(self, tablero, mensaje, human, ia, empates, combo_ganador=None):
+        if self.fondo_juego: self.pantalla.blit(self.fondo_juego, (0, 0))
+        else: self.pantalla.fill(pygame.Color(COLOR_FONDO))
+
+        # Títulos
+        lbl_t = self.fuentes['titulo'].render("TABLERO DEL JUEGO", True, (55, 58, 127))
+        self.pantalla.blit(lbl_t, lbl_t.get_rect(center=(ANCHO_VENTANA // 2, 60)))
+        lbl_m = self.fuentes['subtitulo'].render(mensaje, True, (235, 186, 239))
+        self.pantalla.blit(lbl_m, lbl_m.get_rect(center=(ANCHO_VENTANA // 2, 110)))
+
+        # Tablero a la izquierda
+        self._dibujar_grid_tablero(int(ANCHO_VENTANA * 0.20), int(ALTO_VENTANA/2 - 150), tablero)
+        
+        # Emoción del Gato (Q-Learning)
+        emocion = "neutro"
+        if "Perdiste" in mensaje or "Ganó la IA" in mensaje: emocion = "feliz"
+        elif "Ganaste" in mensaje: emocion = "triste"
+        elif "IA Pensando" in mensaje: emocion = "pensando"
+
+        # DIBUJAR UN SOLO GATO GRANDE
+        self.dibujar_avatar(self.pantalla, emocion, "derecha", modo_mini=False, ai_set="q")
+
+        if combo_ganador: self.dibujar_linea_ganadora(combo_ganador)
+        self._gestionar_botones_comunes()
+        self._dibujar_marcador(human, empates, ia, 'humano_vs_ia')
+        pygame.display.flip()
+
+    # ------------------------------
+    # DIBUJAR INTERFAZ MINIMAX
+    # Muestra la pantalla del modo IA vs Minimax con tablero centrado y dos gatos pequeños enfrentados.
+    # ------------------------------
+    def dibujar_interfaz_minimax(self, tablero, mensaje, q_learn, minimax, empates, estructura_arbol, combo_ganador=None):
+        if self.fondo_juego: self.pantalla.blit(self.fondo_juego, (0, 0))
+        else: self.pantalla.fill((150, 150, 200))
+
+        # Títulos
+        lbl_t = self.fuentes['titulo'].render("Q-LEARNING VS MINIMAX", True, (55, 58, 127))
+        self.pantalla.blit(lbl_t, lbl_t.get_rect(center=(ANCHO_VENTANA // 2, 60)))
+        lbl_m = self.fuentes['subtitulo'].render(mensaje, True, (235, 186, 239))
+        self.pantalla.blit(lbl_m, lbl_m.get_rect(center=(ANCHO_VENTANA // 2, 110)))
+
+        # Tablero Centrado
+        self._dibujar_grid_tablero(ANCHO_VENTANA // 2 - (self.ancho_juego // 2), int(ALTO_VENTANA/2 - 150), tablero)
+
+        # Emociones
+        emocion_q = "pensando" if "Q-Learning" in mensaje or "IA Pensando" in mensaje else "neutro"
+        emocion_m = "pensando" if "Minimax" in mensaje else "neutro"
+        if "Perdiste" in mensaje or "IA" in mensaje and "Ganó" in mensaje: emocion_q, emocion_m = "feliz", "triste"
+        elif "Ganaste" in mensaje or "Minimax" in mensaje and "Ganó" in mensaje: emocion_q, emocion_m = "triste", "feliz"
+
+        # Gatos
+        self.dibujar_avatar(self.pantalla, emocion_q, "izquierda", True, ai_set="q")
+        self.dibujar_avatar(self.pantalla, emocion_m, "derecha", True, ai_set="m")
+
+        # Badges 
+        y_badges = 240 
+        self._dibujar_badge_ia(self.pantalla, "MACHINE LEARNING", int(ANCHO_VENTANA * 0.05 + 130), y_badges, "Q-Learning" in mensaje)
+        self._dibujar_badge_ia(self.pantalla, "MINIMAX EXPERT", int(ANCHO_VENTANA * 0.95 - 130), y_badges, "Minimax" in mensaje)
+
+        # Botones y Marcador
+        self._gestionar_botones_comunes(incluir_arbol=True)
+        self._dibujar_marcador(q_learn, empates, minimax, 'ia_vs_ia')
+
+        # Capas superiores (Línea y Árbol)
+        if combo_ganador: self.dibujar_linea_ganadora(combo_ganador)
+        if self.modal_abierto: self._dibujar_modal_arbol(estructura_arbol)
+
+        pygame.display.flip()
+
+    # ------------------------------
+    # GESTIONAR BOTONES COMUNES
+    # Controla los botones de salir y reiniciar, detectando cuando el mouse pasa por encima.
+    # ------------------------------
+    def _gestionar_botones_comunes(self, incluir_arbol=False):
+
+        h_home = self._dibujar_boton_con_imagen(self.rect_home, self.img_home)
+        h_reload = self._dibujar_boton_con_imagen(self.rect_reload, self.img_reload)
+        
+        h_tree = False
+        if incluir_arbol:
+            h_tree = self._dibujar_boton_con_imagen(self.rect_boton_arbol, self.img_tree)
+
+        hover_actual = None
+        if h_home:
+            hover_actual = "SALIR"
+        elif h_reload:
+            hover_actual = "NUEVO"
+        elif h_tree:
+            hover_actual = "ARBOL"
+
+        if hover_actual != self.ultimo_boton_hover:
+            if hover_actual is not None:
+                if 'menu_hover' in self.sonidos:
+                    self.sonidos['menu_hover'].play()
+            self.ultimo_boton_hover = hover_actual
+
+    # ------------------------------
+    # OBTENER EVENTO USUARIO
+    # Captura y devuelve las acciones del teclado o mouse del jugador.
+    # ------------------------------   
+    def obtener_evento_usuario(self):
+        return manejar_eventos(self)
     
+    # ------------------------------
+    # DIBUJAR LÍNEA GANADORA
+    # Traza una línea dorada sobre las tres casillas que formaron el ganador.
+    # ------------------------------
+    def dibujar_linea_ganadora(self, combo):
+        if not combo: return
+        def centro(i):
+            f, c = i // 3, i % 3
+            return (self.inicio_x + c*(TAMANO_CASILLA+ESPACIO) + TAMANO_CASILLA//2, self.inicio_y + f*(TAMANO_CASILLA+ESPACIO) + TAMANO_CASILLA//2)
+        p1, p2 = centro(combo[0]), centro(combo[2])
+        pygame.draw.line(self.pantalla, (255, 215, 0), p1, p2, 15)
+
+    # ------------------------------
+    # ÁRBOL recursivo (usa scroll_x, scroll_y)
+    # Dibuja el árbol con nodos, líneas y scroll; llama a mini-tableros y se expande solo.
+    # ------------------------------
+    def dibujar_arbol_recursivo(self, nodos, x_min, x_max, y_nivel, padre_pos=None):
+        if not nodos: return
+
+        cantidad = len(nodos)
+        ancho_nodo_px = (TAMANO_MINI * 3) + 8
+        
+        # Espacio fijo entre nodos hermanos
+        ESPACIO_ENTRE_HERMANOS = 140 
+        
+        centro_area = (x_min + x_max) / 2
+        ancho_total_grupo = cantidad * ESPACIO_ENTRE_HERMANOS
+        x_inicio = centro_area - (ancho_total_grupo / 2)
+
+        for i, nodo in enumerate(nodos):
+            center_x_nodo = x_inicio + (i * ESPACIO_ENTRE_HERMANOS) + (ESPACIO_ENTRE_HERMANOS / 2)
+            
+            # Posición final
+            pos_x = center_x_nodo - (ancho_nodo_px / 2) + self.scroll_x
+            pos_y = y_nivel + self.scroll_y
+            
+            punto_conexion_top = (pos_x + ancho_nodo_px / 2, pos_y)
+
+            # --- DIBUJAR LÍNEAS ---
+            if padre_pos:
+                padre_x, padre_y = padre_pos
+                hijo_x, hijo_y = punto_conexion_top
+                mid_y = (padre_y + hijo_y) // 2
+
+                pygame.draw.line(self.pantalla, pygame.Color(COLOR_LINEA), (padre_x, padre_y), (padre_x, mid_y), 2)
+                pygame.draw.line(self.pantalla, pygame.Color(COLOR_LINEA), (padre_x, mid_y), (hijo_x, mid_y), 2)
+                pygame.draw.line(self.pantalla, pygame.Color(COLOR_LINEA), (hijo_x, mid_y), (hijo_x, hijo_y), 2)
+                
+            # Determinar si es camino ganador para resaltarlo
+            es_camino = nodo.get("es_camino_ganador", False)
+            nodo_id = id(nodo)
+            
+            punto_conexion_bottom = dibujar_mini_tablero(
+                self.pantalla,         
+                self.fuentes['mini'],       
+                pos_x, pos_y, 
+                nodo["tablero"], 
+                TAMANO_MINI, 
+                self.fade_cache,        
+                self.fade_speed,        
+                nodo.get("puntaje"), 
+                nodo_id, 
+                es_camino=es_camino
+            )
+
+            p_val = nodo.get("puntaje")
+            if p_val is not None:
+                col_p = pygame.Color("#ccffcc") if p_val > 0 else (pygame.Color("#ffcccc") if p_val < 0 else pygame.Color("#ffffff"))
+                lbl_puntaje = self.fuentes['numeros'].render(str(p_val), True, col_p)
+                self.pantalla.blit(lbl_puntaje, (pos_x + ancho_nodo_px + 3, pos_y + 10))
+
+            if nodo.get("sub_ramas"):
+                ancho_virtual = 4000 
+                self.dibujar_arbol_recursivo(
+                    nodo["sub_ramas"], 
+                    center_x_nodo - ancho_virtual,
+                    center_x_nodo + ancho_virtual, 
+                    y_nivel + ESPACIO_VERTICAL_ARBOL, 
+                    punto_conexion_bottom
+                )   
+    
+    # ------------------------------
+    # DIBUJAR AVATAR
+    # Muestra el gato en pantalla según su tamaño (mini o grande) y estado de ánimo.
+    # ------------------------------    
+    def dibujar_avatar(self, superficie, estado_emocional, lado="derecha", modo_mini=False, ai_set="q"):
+
+        # Elegir el set correcto según el tipo de IA y el tamaño
+        if ai_set == "q":
+            diccionario = self.imagenes_q_mini if modo_mini else self.imagenes_q
+        else:
+            diccionario = self.imagenes_m_mini if modo_mini else self.imagenes_m
+            
+        img = diccionario.get(estado_emocional) or diccionario.get("neutro")
+        if not img: return
+        
+        # POSICIONAMIENTO 
+        if modo_mini:
+            # Gatos pequeños en las esquinas (IA vs IA)
+            x_gato = int(ANCHO_VENTANA * 0.95 - img.get_width()) if lado == "derecha" else int(ANCHO_VENTANA * 0.05)
+            y_gato = int((ALTO_VENTANA / 2) - (img.get_height() / 2)) + 50
+            rect_plat = pygame.Rect(x_gato - 15, y_gato + img.get_height() - 80, img.get_width() + 30, 100)
+        else:
+            # Gato grande (Modo Humano)
+            x_gato = int(ANCHO_VENTANA * 0.60)
+            y_gato = int((ALTO_VENTANA / 2) - (img.get_height() / 2)) + 30
+            rect_plat = pygame.Rect(x_gato - 20, y_gato + img.get_height() - 150, img.get_width() + 40, 160)
+
+        pygame.draw.rect(superficie, (55, 58, 127), rect_plat, border_radius=25)
+        superficie.blit(img, (x_gato, y_gato))
+
     # --------------------
     # Modal para ver el árbol completo
     # Overlay oscuro con árbol completo, permite arrastrar y cerrar con botón o Esc.
@@ -566,4 +445,96 @@ class InterfazGrafica:
         self.scroll_x, self.scroll_y = backup_x, backup_y
         self.pantalla.set_clip(previous_clip) 
 
-    
+    # ------------------------------
+    # DIBUJAR GRID DEL TABLERO
+    # Pinta el fondo del tablero y las 9 casillas con sus fichas (X o O).
+    # ------------------------------
+    def _dibujar_grid_tablero(self, x_pos, y_pos, tablero):
+        self.inicio_x, self.inicio_y = x_pos, y_pos
+        ancho_fondo = self.ancho_juego + (PADDING_LATERAL * 2)
+        alto_fondo = self.ancho_juego + (PADDING_TABLERO * 2)
+        pygame.draw.rect(self.pantalla, pygame.Color(COLOR_TABLERO), (x_pos - PADDING_LATERAL, y_pos - PADDING_TABLERO, ancho_fondo, alto_fondo), border_radius=45)
+
+        for i in range(9):
+            fila, col = i // 3, i % 3
+            x, y = x_pos + col * (TAMANO_CASILLA + ESPACIO), y_pos + fila * (TAMANO_CASILLA + ESPACIO)
+            pygame.draw.rect(self.pantalla, pygame.Color(COLOR_CASILLA_SOMBRA_3D), (x, y + 10, TAMANO_CASILLA, TAMANO_CASILLA), border_radius=25)
+            pygame.draw.rect(self.pantalla, pygame.Color(COLOR_CASILLA), (x, y, TAMANO_CASILLA, TAMANO_CASILLA), border_radius=25)
+            if tablero[i] != " ":
+                color = pygame.Color(COLOR_X if tablero[i] == "X" else COLOR_O)
+                txt = self.fuentes['ficha'].render(tablero[i], True, color)
+                self.pantalla.blit(txt, txt.get_rect(center=(x + TAMANO_CASILLA / 2, y + TAMANO_CASILLA / 2)))
+
+ # ------------------------------
+    # DIBUJAR BOTÓN CON IMAGEN
+    # Crea un botón interactivo con sombra, efecto hover y un ícono centrado.
+    # ------------------------------
+    def _dibujar_boton_con_imagen(self, rect, imagen_icon):
+        mouse_pos = pygame.mouse.get_pos()
+        hover = rect.collidepoint(mouse_pos)
+        
+        # Sombra
+        sombra = rect.copy(); sombra.y += 5
+        pygame.draw.rect(self.pantalla, (40, 40, 80), sombra, border_radius=12)
+        
+        # Cuerpo
+        color = (60, 63, 130) if hover else (55, 58, 127)
+        rect_v = rect.copy()
+        if hover: rect_v.y -= 4
+        pygame.draw.rect(self.pantalla, color, rect_v, border_radius=12)
+        
+        if imagen_icon:
+            self.pantalla.blit(imagen_icon, imagen_icon.get_rect(center=rect_v.center))
+        return hover
+
+    # --------------------
+    # Dibuja una etiqueta elegante para identificar a la IA.
+    #    :param es_activo: Si es True, la etiqueta brilla (es el turno de esa IA).
+    # --------------------
+    def _dibujar_badge_ia(self, superficie, texto, centro_x, y_pos, es_activo):
+
+        fuente = self.fuentes['ui']
+        texto_surf = fuente.render(texto, True, (255, 255, 255))
+        
+        # Tamaño del badge basado en el texto
+        ancho_badge = texto_surf.get_width() + 30
+        alto_badge = 35
+        rect_badge = pygame.Rect(0, 0, ancho_badge, alto_badge)
+        rect_badge.center = (centro_x, y_pos)
+
+        # Dibujar Sombra
+        sombra = rect_badge.copy()
+        sombra.y += 4
+        pygame.draw.rect(superficie, (40, 40, 80), sombra, border_radius=12)
+
+        # Dibujar Fondo 
+        color_fondo = (80, 85, 180) if es_activo else (55, 58, 127)
+        pygame.draw.rect(superficie, color_fondo, rect_badge, border_radius=12)
+        
+        # Borde extra si es su turno (Efecto de brillo)
+        if es_activo:
+            pygame.draw.rect(superficie, (COLOR_X), rect_badge, width=2, border_radius=12)
+
+        # 4. Poner el texto
+        superficie.blit(texto_surf, texto_surf.get_rect(center=rect_badge.center))
+
+    # --------------------
+    # Dibuja la puntuación de los jugadores: Empate, Agentes, Humano
+    # modo: 'ia_vs_ia' o 'humano_vs_ia'
+    # v1: Puntos Izquierda Q-Learning o Humano -  empates: Puntos Centro -  v2: Puntos Derecha (Minimax o IA)
+    # --------------------
+    def _dibujar_marcador(self, v1, empates, v2, modo):
+
+        ancho, alto = 420, 45 
+        rect_marcador = pygame.Rect(0, 0, ancho, alto)
+        rect_marcador.center = (ANCHO_VENTANA // 2, ALTO_VENTANA - 60)
+
+        pygame.draw.rect(self.pantalla, (COLOR_CASILLA), rect_marcador, width=3, border_radius=15)
+
+        if modo == 'ia_vs_ia':
+            texto = f"Q-LEARNING: {v1}  |  EMPATE: {empates}  |  MINIMAX: {v2}"
+        else:
+            texto = f"TÚ: {v1}  |  EMPATES: {empates}  |  IA: {v2}"
+
+        lbl_score = self.fuentes['score'].render(texto, True, (COLOR_CASILLA))
+        self.pantalla.blit(lbl_score, lbl_score.get_rect(center=rect_marcador.center))
