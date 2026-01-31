@@ -150,8 +150,8 @@ def cargar_sonidos():
     
     ruta_sfx = os.path.join(os.path.dirname(__file__), '..', 'assets', 'plop.wav')
     ruta_win = os.path.join(os.path.dirname(__file__), '..', 'assets', 'ganar.mp3') 
-    ruta_win = os.path.join(os.path.dirname(__file__), '..', 'assets', 'meow.wav') 
-    ruta_win = os.path.join(os.path.dirname(__file__), '..', 'assets', 'draw.wav') 
+    ruta_meow= os.path.join(os.path.dirname(__file__), '..', 'assets', 'meow.wav') 
+    ruta_draw = os.path.join(os.path.dirname(__file__), '..', 'assets', 'draw.wav') 
 
     try:
         if not pygame.mixer.get_init():
@@ -169,10 +169,10 @@ def cargar_sonidos():
         sonidos['win'] = pygame.mixer.Sound(ruta_win)
         sonidos['win'].set_volume(0.6)
 
-        sonidos['draw'] = pygame.mixer.Sound(ruta_win)
+        sonidos['draw'] = pygame.mixer.Sound(ruta_draw)
         sonidos['draw'].set_volume(0.6)
 
-        sonidos['meow'] = pygame.mixer.Sound(ruta_win)
+        sonidos['meow'] = pygame.mixer.Sound(ruta_meow)
         sonidos['meow'].set_volume(0.7)
         
     except (FileNotFoundError, pygame.error) as e:
