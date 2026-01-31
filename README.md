@@ -10,11 +10,11 @@
 
 ## 📸 Galería
 
-| Menú Principal | Tablero de Juego |
+| Menú Principal | Juego Modo Humano Vs Agente |
 |:---:|:---:|
 | ![Menú](assets/screenshots/menu.png) | ![Juego Modo Humano Vs Agente](assets/screenshots/jugador_vs_ai.png) |
 
-| Árbol de Decisiones | Pantalla de Ayuda |
+| Juego Modo Agente QL Vs Agente Minimax | Modal del árbol de decisiones |
 |:---:|:---:|
 | ![Juego Modo Agente QL Vs Agente Minimax](assets/screenshots/minimax_vs_ql.png) | ![Modal del árbol de decisiones](assets/screenshots/modal_arbol.png) |
 
@@ -68,14 +68,14 @@ Sigue estos pasos para probar el proyecto en tu máquina local:
 
 ## 📊 ¿Cómo puedes entrenar al Agente?
 
-1.  **Elimina el archivo "conocimiento_gato.json:**
+1.  **Elimina el archivo "conocimiento_gato.json**
 
 2.  **Ejecuta el comando para entrenar al agente desde la raíz del proyecto**
     ``` bash
     python -m game.trainer
     cd agente-tres-rayas-q-learning
     ```
-3.  **En consola podrás observar el tiempo y cómo se entrenó el agente:**
+3.  **En consola podrás observar el tiempo y cómo se entrenó el agente**
 
 4.  **Podrás generar un reporte en html del entrenamiento del agente ejecutando el comando:**
     ``` bash
