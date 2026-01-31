@@ -4,6 +4,7 @@ class LogicaTresRayas:
 
     def __init__(self):
         self.tablero = [" " for _ in range(9)]
+        self.historial = []
         self.ganador = None
         self.combo_ganador = None
 
@@ -31,6 +32,7 @@ class LogicaTresRayas:
     def realizar_movimiento(self, indice, jugador):
         if self.es_movimiento_valido(indice):
             self.tablero[indice] = jugador
+            self.historial.append(indice)
             return True
         return False
 
