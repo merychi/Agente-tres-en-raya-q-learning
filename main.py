@@ -98,9 +98,19 @@ def main():
             
             if evento == 'REINICIAR':
                 juego.reiniciar()
+                juego.historial = []  
+                estructura_arbol = [] 
                 turno = "X" 
                 mensaje_estado = "IA Pensando"
                 juego_terminado_flag = False
+                continue
+            
+            if evento == 'ARBOL': 
+                if modo_juego == "MINIMAX":
+                    estructura_arbol = generar_arbol_visual(juego.historial)
+                    ui.modal_abierto = True
+                    ui.modal_scroll_x = 0
+                    ui.modal_scroll_y = 0
                 continue
 
             # IGNORAR EVENTOS SI EL JUEGO YA TERMINÓ
@@ -138,19 +148,19 @@ def main():
                 if ganador and 'win' in ui.sonidos:
                     ui.sonidos['win'].play()
 
-                estructura_arbol = generar_arbol_visual(juego.tablero)         
+                estructura_arbol = generar_arbol_visual(juego.historial)       
                 juego_terminado_flag = True
                 continue
 
             # TURNO DE LA IA (Q-LEARNING)
             if turno == "X":
                 if modo_juego == "HUMANO":
+                    mensaje_estado = "IA Pensando..."
                     ui.dibujar_interfaz_humano(juego.tablero, mensaje_estado, p_human, p_ia_vs_h, empates_h, juego.combo_ganador)
                 else:
                     ui.dibujar_interfaz_minimax(juego.tablero, mensaje_estado, p_q, p_m, empates_ai, estructura_arbol, juego.combo_ganador)
 
                 pygame.display.flip()
-                
                 time.sleep(0.5) 
 
                 posibles = juego.obtener_movimientos_posibles()
@@ -158,8 +168,11 @@ def main():
                 accion_ia = agente_global.obtener_accion(juego.tablero, posibles, en_entrenamiento=False)
                 
                 if accion_ia is not None:
-                    juego.realizar_movimiento(accion_ia, "X")
-                    estructura_arbol = generar_arbol_visual(juego.tablero) 
+                    juego.realizar_movimiento(accion_ia, "X") 
+
+                    if modo_juego == "MINIMAX": 
+                        estructura_arbol = generar_arbol_visual(juego.historial)
+
                     turno = "O"
                     if 'colocar' in ui.sonidos: 
                         ui.sonidos['colocar'].play()
@@ -179,8 +192,10 @@ def main():
                     time.sleep(0.5)
                     movimiento = obtener_movimiento_minimax_adaptable(juego.tablero, "O")
                     if movimiento is not None:
-                        juego.realizar_movimiento(movimiento, "O")
-                        estructura_arbol = generar_arbol_visual(juego.tablero) 
+                        juego.realizar_movimiento(movimiento, "O") 
+
+                        estructura_arbol = generar_arbol_visual(juego.historial) 
+
                         turno = "X"
                         if 'colocar' in ui.sonidos: 
                             ui.sonidos['colocar'].play()
@@ -192,7 +207,6 @@ def main():
                         
                         if juego.es_movimiento_valido(movimiento):
                             juego.realizar_movimiento(movimiento, "O")
-                            estructura_arbol = generar_arbol_visual(juego.tablero) 
                             turno = "X" 
                             if 'colocar' in ui.sonidos: ui.sonidos['colocar'].play()
                         else:
